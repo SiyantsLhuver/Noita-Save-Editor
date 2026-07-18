@@ -1,36 +1,3 @@
-#!/usr/bin/env python3
-"""
-noita_wand_editor_gui.py — a desktop GUI for editing wands, spells, health and money
-in a Noita player.xml savegame.
-
-This is a plain-text / regex based editor, not a full XML rewriter: it locates the exact
-attributes it needs to change (action_id, uses_remaining, hp, money, ...) by their byte
-offsets in the file and only touches those bytes. Everything else in the save — formatting,
-attribute order, whitespace — is left completely untouched, which is important because
-Noita's own save format is not "pretty" XML and a generic XML library will happily mangle it.
-
-Wands store their spells as child <Entity tags="card_action"> elements, each with an
-<ItemActionComponent action_id="SOME_SPELL_ID">. That's the only piece of info that
-determines which spell a slot holds — everything else about the card (name, sprite,
-description) is filled in by the game at load time from the action_id. So "editing a spell"
-is really just: find that one attribute, and swap the string.
-
-Usage:
-
-    python3 noita_wand_editor_gui.py
-
-...opens a window. File > Open picks your player.xml. Click a spell slot's text box to
-search/replace it, or use the "add a spell" box at the bottom of a wand. Ctrl+S saves in
-place (a .bak backup is written automatically the first time).
-
-To turn this into a standalone Windows .exe (no Python install required to run it):
-
-    pip install pyinstaller
-    pyinstaller --onefile --windowed --name "NoitaWandEditor" noita_wand_editor_gui.py
-
-The .exe will be in the generated dist/ folder.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -42,10 +9,6 @@ from pathlib import Path
 from typing import Optional
 
 
-# ---------------------------------------------------------------------------
-# Spell database (extracted from the game's own data/scripts/gun/gun_actions.lua
-# + translations, via the noita-wand-simulator project). 391 spells.
-# ---------------------------------------------------------------------------
 
 SPELLS = [
     {"id": 'BOMB', "name": 'Bomb', "type": 'PROJECTILE', "mana": 25, "price": 200, "max_uses": 3},
@@ -471,15 +434,11 @@ def search_spells(query: str = "", type_filter: Optional[str] = None):
     return out
 
 
-# A generic card_action entity, used as a template when adding a spell to a wand that
-# currently has zero spells (so there's nothing in the save itself to clone from).
-# This is boilerplate Noita game structure, identical for every install of the game.
+
 GENERIC_SPELL_TEMPLATE = '<Entity \n        _version="1" \n        name="" \n        serialize="1" \n        tags="card_action" >\n\n        <_Transform \n          position.x="-1627.19" \n          position.y="-740.964" \n          rotation="0" \n          scale.x="1" \n          scale.y="1" >\n\n        </_Transform>\n\n        <HitboxComponent \n          _enabled="0" \n          _tags="enabled_in_world" \n          aabb_max_x="4" \n          aabb_max_y="3" \n          aabb_min_x="-4" \n          aabb_min_y="-3" \n          damage_multiplier="1" \n          is_enemy="1" \n          is_item="0" \n          is_player="0" \n          offset.x="0" \n          offset.y="0" >\n\n        </HitboxComponent>\n\n        <ItemActionComponent \n          _enabled="0" \n          _tags="enabled_in_world" \n          action_id="LASER_LUMINOUS_DRILL" >\n\n        </ItemActionComponent>\n\n        <ItemComponent \n          _enabled="0" \n          _tags="enabled_in_world" \n          always_use_item_name_in_ui="0" \n          auto_pickup="0" \n          camera_max_distance="50" \n          camera_smooth_speed_multiplier="1" \n          collect_nondefault_actions="0" \n          custom_pickup_string="" \n          drinkable="1" \n          enable_orb_hacks="0" \n          has_been_picked_by_player="0" \n          inventory_slot.x="4" \n          inventory_slot.y="0" \n          is_all_spells_book="0" \n          is_consumable="0" \n          is_equipable_forced="0" \n          is_frozen="0" \n          is_hittable_always="0" \n          is_identified="0" \n          is_pickable="1" \n          is_stackable="0" \n          item_name="" \n          item_pickup_radius="14.1" \n          mFramePickedUp="0" \n          max_child_items="0" \n          next_frame_pickable="136999" \n          npc_next_frame_pickable="0" \n          permanently_attached="0" \n          play_hover_animation="0" \n          play_pick_sound="1" \n          play_spinning_animation="0" \n          preferred_inventory="FULL" \n          remove_default_child_actions_on_death="0" \n          remove_on_death="0" \n          remove_on_death_if_empty="0" \n          spawn_pos.x="-1627.19" \n          spawn_pos.y="-740.964" \n          stats_count_as_item_pick_up="1" \n          ui_description="" \n          ui_display_description_on_pick_up_hint="0" \n          ui_sprite="" \n          uses_remaining="-1" >\n\n        </ItemComponent>\n\n        <SimplePhysicsComponent \n          _enabled="0" \n          _tags="enabled_in_world" \n          can_go_up="1" >\n\n        </SimplePhysicsComponent>\n\n        <SpriteComponent \n          _enabled="0" \n          _tags="enabled_in_world,item_identified" \n          additive="0" \n          alpha="1" \n          emissive="0" \n          fog_of_war_hole="0" \n          has_special_scale="0" \n          image_file="data/ui_gfx/gun_actions/luminous_drill_timer.png" \n          is_text_sprite="0" \n          kill_entity_after_finished="0" \n          never_ragdollify_on_death="0" \n          next_rect_animation="" \n          offset_animator_offset.x="0" \n          offset_animator_offset.y="0" \n          offset_x="8" \n          offset_y="17" \n          rect_animation="" \n          smooth_filtering="0" \n          special_scale_x="1" \n          special_scale_y="1" \n          text="" \n          transform_offset.x="0" \n          transform_offset.y="0" \n          ui_is_parent="0" \n          update_transform="1" \n          update_transform_rotation="1" \n          visible="1" \n          z_index="0.595" >\n\n        </SpriteComponent>\n\n        <SpriteComponent \n          _enabled="0" \n          _tags="enabled_in_world,item_unidentified" \n          additive="0" \n          alpha="1" \n          emissive="0" \n          fog_of_war_hole="0" \n          has_special_scale="0" \n          image_file="data/ui_gfx/gun_actions/unidentified.png" \n          is_text_sprite="0" \n          kill_entity_after_finished="0" \n          never_ragdollify_on_death="0" \n          next_rect_animation="" \n          offset_animator_offset.x="0" \n          offset_animator_offset.y="0" \n          offset_x="8" \n          offset_y="17" \n          rect_animation="" \n          smooth_filtering="0" \n          special_scale_x="1" \n          special_scale_y="1" \n          text="" \n          transform_offset.x="0" \n          transform_offset.y="0" \n          ui_is_parent="0" \n          update_transform="1" \n          update_transform_rotation="1" \n          visible="1" \n          z_index="0.595" >\n\n        </SpriteComponent>\n\n        <SpriteComponent \n          _enabled="0" \n          _tags="enabled_in_world,item_bg" \n          additive="0" \n          alpha="1" \n          emissive="0" \n          fog_of_war_hole="0" \n          has_special_scale="0" \n          image_file="data/ui_gfx/inventory/item_bg_projectile.png" \n          is_text_sprite="0" \n          kill_entity_after_finished="0" \n          never_ragdollify_on_death="0" \n          next_rect_animation="" \n          offset_animator_offset.x="0" \n          offset_animator_offset.y="0" \n          offset_x="10" \n          offset_y="19" \n          rect_animation="" \n          smooth_filtering="0" \n          special_scale_x="1" \n          special_scale_y="1" \n          text="" \n          transform_offset.x="0" \n          transform_offset.y="0" \n          ui_is_parent="0" \n          update_transform="1" \n          update_transform_rotation="1" \n          visible="1" \n          z_index="0.595" >\n\n        </SpriteComponent>\n\n        <SpriteOffsetAnimatorComponent \n          _enabled="0" \n          _tags="enabled_in_world" \n          sprite_id="0" \n          x_amount="0" \n          x_phase="16" \n          x_phase_offset="-221.837" \n          x_speed="0" \n          y_amount="1" \n          y_speed="2.5" >\n\n        </SpriteOffsetAnimatorComponent>\n\n        <SpriteOffsetAnimatorComponent \n          _enabled="0" \n          _tags="enabled_in_world" \n          sprite_id="1" \n          x_amount="0" \n          x_phase="16" \n          x_phase_offset="-221.837" \n          x_speed="0" \n          y_amount="1" \n          y_speed="2.5" >\n\n        </SpriteOffsetAnimatorComponent>\n\n        <SpriteOffsetAnimatorComponent \n          _enabled="0" \n          _tags="enabled_in_world" \n          sprite_id="2" \n          x_amount="0" \n          x_phase="16" \n          x_phase_offset="-221.837" \n          x_speed="0" \n          y_amount="1" \n          y_speed="2.5" >\n\n        </SpriteOffsetAnimatorComponent>\n\n        <SpriteOffsetAnimatorComponent \n          _enabled="0" \n          _tags="enabled_in_world" \n          sprite_id="3" \n          x_amount="0" \n          x_phase="16" \n          x_phase_offset="-221.837" \n          x_speed="0" \n          y_amount="1" \n          y_speed="2.5" >\n\n        </SpriteOffsetAnimatorComponent>\n\n        <VelocityComponent \n          _enabled="0" \n          _tags="enabled_in_world" \n          affect_physics_bodies="0" \n          air_friction="0.55" \n          apply_terminal_velocity="1" \n          displace_liquid="1" \n          gravity_x="0" \n          gravity_y="400" \n          limit_to_max_velocity="1" \n          liquid_death_threshold="0" \n          liquid_drag="1" \n          mVelocity.x="0" \n          mVelocity.y="0" \n          mass="0.05" \n          terminal_velocity="1000" \n          updates_velocity="1" >\n\n        </VelocityComponent>\n\n      </Entity>'
 
 
-# ---------------------------------------------------------------------------
-# Entity tree parsing
-# ---------------------------------------------------------------------------
+
 
 _OPEN_RE = re.compile(r"<Entity\b")
 _CLOSE_RE = re.compile(r"</Entity>")
@@ -487,9 +446,7 @@ _ATTR_CACHE: dict = {}
 
 
 def _attr(segment: str, name: str) -> Optional[str]:
-    # (?<![\w.]) stops "effect=" from matching inside "...status_effect=" — a real bug
-    # found while adding perk support, since GameEffectComponent has several attributes
-    # that end in "_effect=" right before the actual "effect=" attribute we want.
+
     pattern = r'(?<![\w.])' + re.escape(name) + r'="([^"]*)"'
     m = re.search(pattern, segment)
     return m.group(1) if m else None
@@ -505,8 +462,8 @@ def _set_attr(text: str, name: str, value, count: int = 1) -> tuple:
 @dataclass
 class EntityNode:
     start: int
-    end: int  # index just past "</Entity>"
-    parent: Optional[int]  # start index of parent, or None for top-level
+    end: int  
+    parent: Optional[int]  
 
 
 def scan_entities(text: str) -> list[EntityNode]:
@@ -526,7 +483,7 @@ def scan_entities(text: str) -> list[EntityNode]:
             stack.append(pos)
         else:
             if not stack:
-                continue  # malformed / unexpected, ignore rather than crash
+                continue  
             start = stack.pop()
             parent = stack[-1] if stack else None
             entities.append(EntityNode(start=start, end=end, parent=parent))
@@ -565,10 +522,10 @@ class Wand:
 
 @dataclass
 class PerkInfo:
-    effect_id: Optional[str]     # e.g. "PROTECTION_EXPLOSION", from GameEffectComponent
+    effect_id: Optional[str]     
     effect_start: Optional[int]
     effect_end: Optional[int]
-    icon_id: Optional[str]       # e.g. "protection_explosion", from UIIconComponent's $perk_ name
+    icon_id: Optional[str]       
     icon_start: Optional[int]
     icon_end: Optional[int]
 
@@ -581,8 +538,7 @@ class PerkInfo:
         return self.display_id.replace("_", " ").title()
 
 
-# A real perk pair pulled from a save (Explosion Immunity), used as the fallback template
-# when adding a perk to a save that doesn't have any perks yet to clone from.
+
 GENERIC_PERK_EFFECT_TEMPLATE = (
     '<Entity \n    _version="1" \n    name="" \n    serialize="1" \n    tags="perk_entity" >\n\n'
     '    <_Transform \n      position.x="0" \n      position.y="0" \n      rotation="0" \n'
@@ -618,12 +574,7 @@ GENERIC_PERK_ICON_TEMPLATE = (
 )
 
 
-# (id, wiki display name) — sourced from each perk's individual page on noita.wiki.gg
-# (the "ID" field in its infobox), cross-checked against a verified extracted
-# perk_list.lua dump (2019, Update #6) via each perk's stable icon filename.
-# This covers most of the commonly-picked perks but is NOT the full ~96-perk roster —
-# search_perks()/find_perk() fall back gracefully, and add_perk() also accepts a raw
-# ID typed directly (e.g. from noita.wiki.gg/wiki/Modding:Perk_IDs) for anything not listed here.
+
 PERKS = [
     ("CRITICAL_HIT", "Critical Hit +"), ("BREATH_UNDERWATER", "Breathless"),
     ("EXTRA_MONEY", "Greed"), ("EXTRA_MONEY_TRICK_KILL", "Trick Greed"),
@@ -680,8 +631,7 @@ def find_perk(query: str):
     matches = starts or contains
     if matches:
         return [{"id": pid, "name": PERKS_BY_ID[pid]} for pid in matches]
-    # Not in our local list — if it looks like a plausible raw ID (letters/digits/underscore,
-    # already uppercase-ish), let it through so add_perk() can still use it directly.
+
     if re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", q) and " " not in q:
         return {"id": q_upper, "name": q_upper.replace("_", " ").title()}
     return []
@@ -705,13 +655,12 @@ class SaveEditor:
 
     def __init__(self, path: str):
         self.path = Path(path)
-        # Noita saves are UTF-8 with \r\n (and sometimes \r\r\n) line endings.
-        # newline='' preserves them exactly as-is on read and write.
+
         with open(self.path, "r", encoding="utf-8", newline="") as f:
             self.text = f.read()
         self._dirty = False
 
-    # -- parsing -----------------------------------------------------------
+
 
     def wands(self) -> list[Wand]:
         entities = scan_entities(self.text)
@@ -749,7 +698,7 @@ class SaveEditor:
         wands.sort(key=lambda w: w.start)
         return wands
 
-    # -- spell editing -------------------------------------------------------
+
 
     def _resolve_spell_id(self, spell: str) -> str:
         """Accepts either an exact action_id or a fuzzy name and returns a valid action_id,
@@ -829,9 +778,7 @@ class SaveEditor:
             raise ValueError(f"There are {len(wands)} wand(s) in this save; wand {wand_index} doesn't exist.")
         return wands[wand_index - 1]
 
-    # -- basic stats ---------------------------------------------------------
-    # The player's own components are the *first* DamageModelComponent / WalletComponent
-    # in the file (nested entities like enemies/items have their own further down).
+
 
     def get_health(self):
         m = re.search(r"<DamageModelComponent\b.*?\bhp=\"([^\"]*)\"", self.text, re.S)
@@ -845,7 +792,7 @@ class SaveEditor:
                                 self.text, count=1, flags=re.S)
             self._dirty = True
         if max_hp is not None:
-            # max_hp, max_hp_cap and max_hp_old should move together or the HP bar clamps oddly
+
             for attr in ("max_hp", "max_hp_cap", "max_hp_old"):
                 self.text = re.sub(rf'(<DamageModelComponent\b.*?\b{attr}=")[^"]*(")',
                                     lambda m: m.group(1) + repr(float(max_hp)) + m.group(2),
@@ -862,13 +809,7 @@ class SaveEditor:
                             self.text, count=1, flags=re.S)
         self._dirty = True
 
-    # -- wand stats (cast delay, spells/cast, recharge, mana) -----------------
-    # These all live on the wand's own AbilityComponent / nested <gun_config> /
-    # <gunaction_config> elements. Verified against a real save: each of these
-    # attribute names occurs exactly once within a wand's own segment *before*
-    # any nested spell <Entity> (except reload_time, which occurs twice — once
-    # on <gun_config> which is what we want, and again on <gunaction_config> as
-    # an unrelated per-action default — so we deliberately take the first match).
+
 
     WAND_STAT_FIELDS = ("mana", "mana_max", "mana_charge_speed", "actions_per_round",
                         "reload_time", "fire_rate_wait")
@@ -898,21 +839,7 @@ class SaveEditor:
         self.text = self.text[:wand.start] + new_seg + self.text[wand.end:]
         self._dirty = True
 
-    # -- perks -----------------------------------------------------------------
-    # Each picked-up perk is stored as a *pair* of top-level <Entity tags="perk_entity">
-    # elements, direct children of the player root entity:
-    #   1. an "effect" entity with a <GameEffectComponent effect="SOME_PERK_ID">
-    #   2. an "icon" entity with a <UIIconComponent name="$perk_some_perk_id">
-    # (id casing: the effect id is UPPER_SNAKE_CASE; the icon's name/description/sprite
-    # use the same id lower_snake_cased.) Removing both entities cleanly removes the perk.
-    # Adding a perk clones an existing pair (or a bundled fallback template) and swaps the id.
-    #
-    # IMPORTANT CAVEAT: a handful of Noita perks run one-time setup code when first picked
-    # up (e.g. permanently resizing a wand's deck) rather than only existing as this static
-    # effect entity. Cloning the entity re-creates the persistent, "always-on" perks
-    # faithfully (immunities, passive stat effects, etc.) but may not fully reproduce a
-    # perk that relies on that one-time pickup logic. Removal is unaffected by this and is
-    # always reliable.
+
 
     def perks(self) -> list["PerkInfo"]:
         entities = scan_entities(self.text)
@@ -961,7 +888,7 @@ class SaveEditor:
             raise ValueError(f"There are {len(perks)} perk(s) in this save; perk {perk_index} doesn't exist.")
         p = perks[perk_index - 1]
         spans = [s for s in [(p.effect_start, p.effect_end), (p.icon_start, p.icon_end)] if s[0] is not None]
-        spans.sort(key=lambda s: s[0], reverse=True)  # remove the later span first so earlier offsets stay valid
+        spans.sort(key=lambda s: s[0], reverse=True)  
         for start, end in spans:
             self.text = self.text[:start] + self.text[end:]
         self._dirty = True
@@ -993,9 +920,7 @@ class SaveEditor:
             icon_template = GENERIC_PERK_ICON_TEMPLATE
 
         effect_block, _ = _set_attr(effect_template, "effect", perk_id, count=1)
-        # icon_block's outer <Entity name=""> would collide with UIIconComponent's own
-        # name="$perk_..." if we matched on attribute name alone, so match on the
-        # "$perk_"/"$perkdesc_" value prefix instead — only the real target has it.
+
         icon_block = re.sub(r'(?<![\w.])name="\$perk_[^"]*"', f'name="$perk_{lower}"', icon_template, count=1)
         icon_block = re.sub(r'(?<![\w.])description="\$perkdesc_[^"]*"', f'description="$perkdesc_{lower}"',
                              icon_block, count=1)
@@ -1041,10 +966,7 @@ def _generic_spell_template() -> str:
         "an existing (even wrong) spell slot instead of adding a new one."
     )
 
-# ---------------------------------------------------------------------------
-# GUI (Tkinter — ships with standard Python on Windows/macOS/Linux, no extra
-# installs needed). This is the part you turn into an .exe with PyInstaller.
-# ---------------------------------------------------------------------------
+
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -1193,14 +1115,13 @@ class NoitaEditorApp(tk.Tk):
         self.configure(bg=BG)
 
         self.editor: SaveEditor | None = None
-        self.autocompletes = []  # keep references alive
-        self.wand_stat_vars = {}  # wand_index -> {field: StringVar}
+        self.autocompletes = []  
+        self.wand_stat_vars = {}  
 
         self._build_menu()
         self._build_layout()
         self._show_empty_state()
 
-    # -- menu --------------------------------------------------------------
 
     def _build_menu(self):
         menubar = tk.Menu(self)
@@ -1217,7 +1138,6 @@ class NoitaEditorApp(tk.Tk):
         self.bind_all("<Control-s>", lambda e: self.save_file())
         self.bind_all("<Control-S>", lambda e: self.save_file_as())
 
-    # -- layout --------------------------------------------------------------
 
     def _build_layout(self):
         header = tk.Frame(self, bg=BG)
@@ -1238,7 +1158,7 @@ class NoitaEditorApp(tk.Tk):
         self.save_btn.pack(side="left", padx=4)
         self.save_btn.configure(state="disabled")
 
-        # stats
+
         self.stats_frame = tk.LabelFrame(self, text="Vitals", bg=PANEL, fg=GOLD,
                                           font=FONT_H2, labelanchor="nw", bd=1,
                                           highlightbackground=LINE, highlightthickness=1)
@@ -1251,7 +1171,7 @@ class NoitaEditorApp(tk.Tk):
         self._stat_field(self.stats_frame, "Money", self.money_var, 2)
         self._mkbutton(self.stats_frame, "Apply", self._apply_stats).grid(row=0, column=6, rowspan=2, padx=14)
 
-        # perks
+
         self.perks_frame = tk.LabelFrame(self, text="Perks", bg=PANEL, fg=GOLD,
                                           font=FONT_H2, labelanchor="nw", bd=1,
                                           highlightbackground=LINE, highlightthickness=1)
@@ -1270,7 +1190,6 @@ class NoitaEditorApp(tk.Tk):
         tk.Label(add_perk_row, text="  search by name (e.g. \"faster levitation\") or type a raw perk id",
                  bg=PANEL, fg=TEXT_DIM, font=FONT_BODY).pack(side="left")
 
-        # scrollable wand area
         outer = tk.Frame(self, bg=BG)
         outer.pack(fill="both", expand=True, padx=18, pady=(4, 8))
         self.canvas = tk.Canvas(outer, bg=BG, highlightthickness=0)
@@ -1284,7 +1203,7 @@ class NoitaEditorApp(tk.Tk):
         self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfig(self.canvas_window, width=e.width))
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
 
-        # status bar
+
         self.status_var = tk.StringVar(value="Open a player.xml file to begin.")
         status = tk.Label(self, textvariable=self.status_var, bg=BG, fg=TEXT_DIM,
                            font=FONT_MONO, anchor="w")
@@ -1316,7 +1235,7 @@ class NoitaEditorApp(tk.Tk):
         tk.Label(self.wands_frame, text="No save loaded yet.", bg=BG, fg=TEXT_DIM,
                  font=FONT_BODY).pack(anchor="w", pady=20)
 
-    # -- file actions --------------------------------------------------------
+
 
     def open_file(self):
         path = filedialog.askopenfilename(
@@ -1327,7 +1246,7 @@ class NoitaEditorApp(tk.Tk):
             return
         try:
             self.editor = SaveEditor(path)
-        except Exception as exc:  # noqa: BLE001 - show any failure to the user
+        except Exception as exc:  
             messagebox.showerror("Couldn't open file", str(exc))
             return
         self.fname_label.configure(text=path)
@@ -1362,7 +1281,7 @@ class NoitaEditorApp(tk.Tk):
             return
         self.status_var.set(f"Saved to {out}")
 
-    # -- rendering -----------------------------------------------------------
+
 
     def render(self):
         if not self.editor:
@@ -1462,7 +1381,6 @@ class NoitaEditorApp(tk.Tk):
         else:
             tk.Label(add_row, text="  ← add a spell", bg=PANEL, fg=TEXT_DIM, font=FONT_BODY).pack(side="left")
 
-    # -- edit actions ---------------------------------------------------------
 
     def _do_swap(self, wand_index, slot_index, new_id):
         try:
