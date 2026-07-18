@@ -1,7 +1,5 @@
 name: Build Windows exe
 
-# Runs automatically whenever you push, and can also be triggered manually
-# from the Actions tab ("Run workflow" button).
 on:
   push:
     paths:
