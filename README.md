@@ -10,6 +10,14 @@ Noita Save Editor is a graphical save editor for Noita that lets you modify perk
 - +50% HP does not currently function correctly.
 
 
+## Features
+
+- Edit perks
+- Edit player stats
+- Edit wands
+- Edit spells
+- Preserve Steam achievements
+- Clean UI 
 
 
 ## Installation
@@ -21,8 +29,14 @@ Noita Save Editor is a graphical save editor for Noita that lets you modify perk
 5. Go to "C:\Users\USERNAME\AppData\LocalLow\Nolla_Games_Noita\save00"
 6. Enjoy
 
+## Supports:
+- Windows
+- Latest Steam version of Noita
 
-python noita_wand_editor_gui.py
 
+# Make sure to backup your safe, it's super easy just copy it and paste it somewhere before editting, I never ran into any issues but I'm sure there is one.
+
+
+This will likely not recieve any more features, but it will recieve maintence if it needs to be fixed. 
 
 For any issues, contact me at "burritosteak2" on discord.
