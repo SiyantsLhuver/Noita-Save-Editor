@@ -1,7 +1,8 @@
 # Noita-Save-Editor
-<img width="875" height="725" alt="image" src="https://github.com/user-attachments/assets/5451505a-c690-4210-9b05-b74d858cfe77" />
+<img width="875" height="725" alt="image" src="https://github.com/user-attachments/assets/9af3ad59-77bc-47e4-a9c4-27966eef330c" />
 
-This is a save editor for the rogue-like Noita. It allows you to edit your save without disabling achievements, even though this can be accomplished with a mod. This lets you edit perks, wands, wand stats, and spells on the wand. It's a sandbox mode, but you can edit your saves however you'd wish. 
+
+Noita Save Editor is a graphical save editor for Noita that lets you modify perks, wands, spells, and other save data without requiring gameplay mods.
 
 
 ## Known Issues
@@ -16,7 +17,12 @@ This is a save editor for the rogue-like Noita. It allows you to edit your save 
 1. Install Python 3.11 or newer.
 2. Download `noita_wand_editor_gui.py`.
 3. Double-click it or run:
+4. Press "Open.."
+5. Go to "C:\Users\USERNAME\AppData\LocalLow\Nolla_Games_Noita\save00"
+6. Enjoy
+
 
 python noita_wand_editor_gui.py
 
 
+For any issues, contact me at "burritosteak2" on discord.
