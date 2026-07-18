@@ -1,0 +1,34 @@
+name: Build Windows exe
+
+# Runs automatically whenever you push, and can also be triggered manually
+# from the Actions tab ("Run workflow" button).
+on:
+  push:
+    paths:
+      - "noita_wand_editor_gui.py"
+      - ".github/workflows/build-exe.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build exe
+        run: pyinstaller --onefile --windowed --name NoitaWandEditor noita_wand_editor_gui.py
+
+      - name: Upload exe as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NoitaWandEditor-windows-exe
+          path: dist/NoitaWandEditor.exe
